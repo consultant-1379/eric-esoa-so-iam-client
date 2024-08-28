@@ -1,0 +1,68 @@
+modelVersion: 2.0
+
+docker-images:
+  - adp-release-auto: armdocker.rnd.ericsson.se/sandbox/adp-staging/adp-cicd/bob-adp-release-auto:latest
+  - python3-builder: armdocker.rnd.ericsson.se/sandbox/adp-staging/adp-cicd/bob-python3builder:latest
+
+properties:
+  - mvn-flags: -e -s settings.xml -Duser.home=. -Pci
+  - image-full-name: armdocker.rnd.ericsson.se/proj-esoa-so/eric-esoa-iam-client
+  - gerrit-url: https://gerrit.ericsson.se/plugins/gitiles/ESOA/ESOA-Parent/com.ericsson.bos.so/eric-esoa-so-iam-client
+
+var:
+  - version
+  - commithash
+
+env:
+  - RELEASE (default=false)
+  - PWD
+
+rules:
+  test:
+    - task: run-tests
+      cmd: docker build ${env.PWD}
+        --tag ${image-full-name}:tests
+        --build-arg REPOSITORY=${gerrit-url}
+        --build-arg COMMIT=${var.commithash}
+        --build-arg APP_VERSION=tests
+        --target test_image
+        --no-cache
+
+  init:
+    - task: version
+      docker-image: adp-release-auto
+      cmd: generate-version --is-release ${env.RELEASE} --output version
+    - task: commit
+      docker-image: adp-release-auto
+      cmd: git rev-parse --short HEAD > .bob/var.commithash
+    - task: git-properties
+      cmd:
+        - echo "GIT_TAG=$(git log -1 --pretty=format:'%h')" >> artifact.properties
+        - echo "GIT_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')" >> artifact.properties
+        - echo "GIT_AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')" >> artifact.properties
+        - echo "GIT_COMMIT_SUMMARY=$(git log -1 --pretty=format:'%s')" >> artifact.properties
+        - echo "IMAGE_VERSION=${var.version}" >> artifact.properties
+
+  image:
+    - task: change-permission
+      cmd: chmod -R 777 ${env.PWD}
+    - task: build-image
+      cmd: docker build ${env.PWD}
+        --tag ${image-full-name}:${var.version}
+        --build-arg REPOSITORY=${gerrit-url}
+        --build-arg COMMIT=${var.commithash}
+        --build-arg APP_VERSION=${var.version}
+        --target release_image
+        --no-cache
+
+  package:
+    - task: image-push
+      cmd: docker push ${image-full-name}:${var.version}
+
+  clean:
+    - task: rm
+      cmd:
+        - rm -rf build
+    - task: git-clean
+      cmd:
+        - git clean -xdff --exclude=.m2 --exclude=.sonar --exclude=settings.xml --exclude=.docker --exclude=.bob

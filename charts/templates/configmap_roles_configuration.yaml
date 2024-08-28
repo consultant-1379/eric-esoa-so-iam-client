@@ -1,0 +1,31 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}-roles-configuration-configmap
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  roles-configuration.json: |
+    [{
+       "name": "role1",
+       "composites": {
+         "realm": [
+           "role1_1",
+           "role1_2"
+         ],
+         "client": {
+           "client1": [
+             "client-role-1"
+           ]
+         }
+       }
+     }, {
+       "name": "role2",
+       "composites": {
+         "realm": [
+           "role2_1",
+           "role2_2"
+         ]
+       }
+     }
+    ]

@@ -1,0 +1,12 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}-update-realm-configuration-configmap
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  realm-configuration.json: |
+    {
+        "bruteForceProtected": "true",
+        "passwordPolicy": "hashIterations and specialChars and upperCase and lowerCase and digits and notUsername and length"
+    }

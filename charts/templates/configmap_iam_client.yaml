@@ -1,0 +1,22 @@
+{{- if .Values.iam.createIamClient }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}-iam-client-configmap
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  client-configuration.json: |
+    {
+      "clientId": "{{ .Values.global.iam.clientId }}",
+      "authorizationServicesEnabled": "true",
+      "implicitFlowEnabled": "true",
+      "directAccessGrantsEnabled": "true",
+      "serviceAccountsEnabled": "true",
+      "secret": "this value can be overriden by env var named CLIENT_SECRET defined in hook",
+      "redirectUris": [
+        "https://{{ .Values.global.hosts.so }}/*",
+        "https://{{ .Values.global.hosts.sdd }}/*"
+      ]
+    }
+{{- end }}

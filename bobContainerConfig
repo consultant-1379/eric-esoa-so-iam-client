@@ -1,0 +1,45 @@
+def bob = new BobCommand()
+import groovy.transform.builder.Builder
+import groovy.transform.builder.SimpleStrategy
+@Builder(builderStrategy = SimpleStrategy, prefix = '')
+
+class BobCommand {
+    def needDockerSocket = true
+    String createCommandWithEnv(def envVars=null) {
+        if (envVars) {
+            envVars.remove("PATH")
+            envVars.remove("GERRIT_EVENT_ACCOUNT_NAME")
+            envVars.remove("GERRIT_EVENT_ACCOUNT")
+            envVars.remove("GERRIT_PATCHSET_UPLOADER")
+            envVars.remove("GERRIT_CHANGE_OWNER_NAME")
+            envVars.remove("GERRIT_CHANGE_OWNER")
+            envVars.remove("SHELL")
+        }
+        def env = envVars
+                .collect({ entry -> "-e ${entry.key}='${entry.value}'" })
+                .join(' ')
+        def bobImage = "armdocker.rnd.ericsson.se/sandbox/adp-staging/adp-cicd/bob.2.0:${envVars.BOB2_VERSION}"
+        def cmd = """\
+            |docker run --rm
+            |--workdir \${PWD}
+            |--env RELEASE=${envVars.RELEASE}
+            |-v \${PWD}:\${PWD}
+            |--user \$(id -u):\$(id -g)
+            |-v /etc/group:/etc/group:ro
+            |-v /etc/passwd:/etc/passwd:ro
+            |-v \${HOME}:\${HOME}
+            |-v \${HOME}/.ssh:\${HOME}/.ssh
+            |-v \${HOME}/.gitconfig:\${HOME}/.gitconfig
+            |${env}
+            |\$(for group in \$(id -G); do printf ' --group-add %s' "\$group"; done)
+            |--group-add \$(stat -c '%g' /var/run/docker.sock)
+            |${needDockerSocket ? '-v /var/run/docker.sock:/var/run/docker.sock' : ''}
+            |${bobImage}
+            |"""
+        return cmd
+                .stripMargin()           // remove indentation
+                .replace('\n', ' ')      // join lines
+                .replaceAll(/[ ]+/, ' ') // replace multiple spaces by one
+    }
+}
+return bob;

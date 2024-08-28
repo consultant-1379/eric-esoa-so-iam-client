@@ -1,0 +1,26 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}-client-scope-configmap
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  client-scope.json: |
+    {
+    "name": "scope-name",
+    "protocol": "openid-connect",
+    "attributes": {},
+    "protocolMappers": [
+        {
+            "name": "protocol-mapper-name",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+                "included.client.audience": "client-name",
+                "id.token.claim": "false",
+                "access.token.claim": "true"
+            }
+        },
+    ]
+    }

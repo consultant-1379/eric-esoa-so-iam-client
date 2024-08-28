@@ -1,0 +1,21 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}-protocol-mappers-configmap
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  protocol-mappers.json: |
+    [
+        {
+            "name": "protocol-mapper-name",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+                "included.client.audience": "client-name",
+                "id.token.claim": "false",
+                "access.token.claim": "true"
+            }
+        }
+    ]s

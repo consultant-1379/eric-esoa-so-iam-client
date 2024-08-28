@@ -1,0 +1,20 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}-group-configmap
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  group.json: | 
+    {
+    "name": "group_name",
+    "path": "/group_path",
+    "attributes": {},
+    "realmRoles": [
+        "create-realm"
+    ],
+    "clientRoles": {},
+    "subGroups": [
+        {}
+    ]
+    }

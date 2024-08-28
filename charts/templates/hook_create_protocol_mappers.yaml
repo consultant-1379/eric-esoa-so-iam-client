@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Chart.Name }}-create-protocol-mappers-hook
+  labels:
+    app: {{ .Chart.Name }}
+  annotations:
+    "helm.sh/hook": post-install, post-upgrade, post-rollback
+    "helm.sh/hook-weight": "20"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: keycloak-client
+          image: "armdocker.rnd.ericsson.se/proj-orchestration-so/keycloak-client:1.0.0-17"
+          env:
+          - name: IAM_ADMIN_USER
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.global.iam.adminSecret | quote }}
+                key: {{ .Values.global.iam.userKey | quote }}
+          - name: IAM_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.global.iam.adminSecret | quote }}
+                key: {{ .Values.global.iam.passwordKey | quote }}
+          - name: CLIENT_SCOPE_NAME
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.clientScopeName | quote }}
+                key: {{ .Values.clientScopeKey | quote }}
+          args:
+          - "create"
+          - "protocol_mapper"
+          - "--keycloak_hostname={{ .Values.global.hosts.iam }}"
+          - "--keycloak_user=$(IAM_ADMIN_USER)"
+          - "--keycloak_password=$(IAM_ADMIN_PASSWORD)"
+          - "--client_scope_name=$(CLIENT_SCOPE_NAME)"
+          - "--config=/config/protocol-mappers.json"
+          volumeMounts:
+          - name: create-protocol-mappers-volume
+            mountPath: /config
+          - name: create-cacert-volume
+            mountPath: /mnt/certs
+      volumes:
+      - name: create-protocol-mappers-volume
+        configMap:
+          name: {{ .Chart.Name }}-protocol-mappers-configmap
+          defaultMode: 0777
+      - name: create-cacert-volume
+        secret:
+          secretName: {{ .Values.iam.cacert.secretName }}
+          items:
+            - key: {{ .Values.iam.cacert.key }}
+              path: {{ .Values.iam.cacert.filePath }}

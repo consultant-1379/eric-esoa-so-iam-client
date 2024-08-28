@@ -1,0 +1,96 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}-rbac-configuration-configmap
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  rbac-configuration.json: |
+    {
+        "roles": [{
+                "name": "ServiceTemplateAdmin",
+                "attributes": {
+                    "type": ["internal"]
+                }
+            }, {
+                "name": "ServiceTemplateViewer",
+                "attributes": {
+                    "type": ["internal"]
+                }
+            }
+        ],
+        "authorization": {
+            "resources": [{
+                    "name": "Service Templates",
+                    "type": "urn:eo:resources:service_templates",
+                    "ownerManagedAccess": false,
+                    "attributes": {},
+                    "uris": [
+                        "/service-templates/**"
+                    ],
+                    "scopes": [{
+                            "name": "PATCH"
+                        }, {
+                            "name": "DELETE"
+                        }, {
+                            "name": "GET"
+                        }, {
+                            "name": "POST"
+                        }, {
+                            "name": "PUT"
+                        }
+                    ]
+                }
+            ],
+            "policies": [{
+                    "name": "Is Service Template Admin",
+                    "type": "role",
+                    "logic": "POSITIVE",
+                    "decisionStrategy": "UNANIMOUS",
+                    "config": {
+                        "roles": "[{\"id\":\"ServiceTemplateAdmin\",\"required\":false}]"
+                    }
+                }, {
+                    "name": "Is Service Template Viewer",
+                    "type": "role",
+                    "logic": "POSITIVE",
+                    "decisionStrategy": "UNANIMOUS",
+                    "config": {
+                        "roles": "[{\"id\":\"ServiceTemplateViewer\",\"required\":false}]"
+                    }
+                }, {
+                    "name": "Admin Service Template",
+                    "type": "scope",
+                    "logic": "POSITIVE",
+                    "decisionStrategy": "AFFIRMATIVE",
+                    "config": {
+                        "resources": "[\"Service Templates\"]",
+                        "scopes": "[\"PUT\",\"POST\",\"DELETE\",\"PATCH\"]",
+                        "applyPolicies": "[\"Is Service Template Admin\"]"
+                    }
+                }, {
+                    "name": "View Service Template",
+                    "type": "scope",
+                    "logic": "POSITIVE",
+                    "decisionStrategy": "AFFIRMATIVE",
+                    "config": {
+                        "resources": "[\"Service Templates\"]",
+                        "scopes": "[\"GET\"]",
+                        "applyPolicies": "[\"Is Service Template Admin\",\"Is Service Template Viewer\"]"
+                    }
+                }
+            ],
+            "scopes": [{
+                    "name": "GET"
+                }, {
+                    "name": "POST"
+                }, {
+                    "name": "DELETE"
+                }, {
+                    "name": "PUT"
+                }, {
+                    "name": "PATCH"
+                }
+            ]
+        }
+    }

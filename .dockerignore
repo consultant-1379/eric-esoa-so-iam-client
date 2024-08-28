@@ -1,0 +1,7 @@
+keycloak_client/scripts/.idea
+keycloak_client/scripts/__pycache__
+keycloak_client/tests/__pycache__
+keycloak_client/tests/.pytest_cache
+keycloak_client/.pytest_cache
+keycloak_client/__pycache__
+.pytest_cache

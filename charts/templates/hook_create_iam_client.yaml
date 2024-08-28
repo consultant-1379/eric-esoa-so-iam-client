@@ -1,0 +1,61 @@
+{{- if .Values.iam.createIamClient }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Chart.Name }}-create-iam-client-hook
+  labels:
+    app: {{ .Chart.Name }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: keycloak-client
+          image: "armdocker.rnd.ericsson.se/proj-orchestration-so/keycloak-client:1.0.0-17"
+          env:
+          - name: CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.iam.kubernetesSecret | quote }}
+                key: {{ .Values.iam.secretKey | quote }}
+          - name: IAM_ADMIN_USER
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.global.iam.adminSecret | quote }}
+                key: {{ .Values.global.iam.userKey | quote }}
+          - name: IAM_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.global.iam.adminSecret | quote }}
+                key: {{ .Values.global.iam.passwordKey | quote }}
+          args:
+          - "create"
+          - "client"
+          - "--keycloak_hostname={{ .Values.global.hosts.iam }}"
+          - "--keycloak_user=$(IAM_ADMIN_USER)"
+          - "--keycloak_password=$(IAM_ADMIN_PASSWORD)"
+          - "--config=/config/client-configuration.json"
+          volumeMounts:
+          - name: create-iam-client-volume
+            mountPath: /config
+          - name: create-cacert-volume
+            mountPath: /mnt/certs
+      volumes:
+      - name: create-iam-client-volume
+        configMap:
+          name: {{ .Chart.Name }}-iam-client-configmap
+          defaultMode: 0777
+      - name: create-cacert-volume
+        secret:
+          secretName: {{ .Values.iam.cacert.secretName }}
+          items:
+            - key: {{ .Values.iam.cacert.key }}
+              path: {{ .Values.iam.cacert.filePath }}
+{{- end }}
